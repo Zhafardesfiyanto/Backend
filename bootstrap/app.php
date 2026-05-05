@@ -1,0 +1,29 @@
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__ . '/../routes/web.php',
+        commands: __DIR__ . '/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware) {
+        
+        // 1. DAFTARKAN ALIAS MIDDLEWARE (Ini yang tadi kurang!)
+        $middleware->alias([
+            'superadmin' => \App\Http\Middleware\IsSuperAdmin::class,
+        ]);
+
+        // 2. ATUR REDIRECT OTOMATIS
+        $middleware->redirectTo(
+            guests: '/login',           // Belum login? Lempar ke sini
+            users: '/hq-admin/dashboard' // Sudah login? Lempar ke sini
+        );
+        
+    })
+    ->withExceptions(function (Exceptions $exceptions) {
+        //
+    })->create();
