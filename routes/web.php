@@ -1,9 +1,8 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\SuperAdminController;
-
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
@@ -13,26 +12,23 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// Hapus 'superadmin' sementara
-Route::middleware(['auth'])->group(function () {
-    // Hapus middleware ['auth', 'superadmin'] SEMENTARA
-    Route::get('/hq-admin/dashboard', [SuperAdminController::class, 'index'])->name('admin.dashboard');
-    Route::get('/hq-admin/users', [SuperAdminController::class, 'users'])->name('admin.users');
-    Route::get('/hq-admin/logs', [SuperAdminController::class, 'logs'])->name('admin.logs');
-});
-;
-Route::middleware(['auth', 'superadmin'])->group(function () {
-    // Halaman Utama Dashboard HQ
-    Route::get('/hq-admin/dashboard', [SuperAdminController::class, 'index'])->name('admin.dashboard');
+// ─── Admin Routes (Super Admin only) ─────────────────────────────────────────
+Route::middleware(['auth', 'superadmin'])->prefix('hq-admin')->name('admin.')->group(function () {
 
-    // Halaman Khusus Management User
-    Route::get('/hq-admin/users', [SuperAdminController::class, 'users'])->name('admin.users');
+    // Dashboard
+    Route::get('/dashboard', [SuperAdminController::class, 'index'])->name('dashboard');
 
-    // Halaman Khusus Audit Logs
-    Route::get('/hq-admin/logs', [SuperAdminController::class, 'logs'])->name('admin.logs');
+    // User Management
+    Route::get('/users', [SuperAdminController::class, 'users'])->name('users');
+    Route::delete('/users/{id}', [SuperAdminController::class, 'destroyUser'])->name('users.destroy');
 
-    // Halaman Service Center (Fitur Perbaikan Akun)
-    Route::get('/hq-admin/service-center', [SuperAdminController::class, 'serviceCenter'])->name('admin.service');
+    // Audit Logs
+    Route::get('/logs', [SuperAdminController::class, 'logs'])->name('logs');
+
+    // Customer Service / Support Tickets
+    Route::get('/service-center', [SuperAdminController::class, 'serviceCenter'])->name('service');
+    Route::patch('/service-center/{ticket}', [SuperAdminController::class, 'updateTicket'])->name('service.update');
 });
 
+// ─── Auth Routes ──────────────────────────────────────────────────────────────
 require __DIR__ . '/auth.php';

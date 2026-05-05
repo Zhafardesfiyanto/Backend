@@ -1,242 +1,192 @@
-<!DOCTYPE html>
-<html lang="id">
+@extends('layouts.admin')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HQ Command Center | Premium Q-Les</title>
+@section('title', 'Dashboard')
+@section('page-title', 'Dashboard')
 
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+@section('content')
 
-    <style>
-        :root {
-            --bg-main: #0f172a;
-            --bg-card: rgba(30, 41, 59, 0.7);
-            --accent: #38bdf8;
-            --text-dim: #94a3b8;
-            --glass-border: rgba(255, 255, 255, 0.1);
-        }
+{{-- Stats Cards --}}
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+    <x-admin.stats-card
+        label="Total Pengguna"
+        :value="$totalUsers ?? 0"
+        icon="fas fa-users"
+        color="blue"
+    />
+    <x-admin.stats-card
+        label="Total Pesanan"
+        :value="$totalSubmissions ?? 0"
+        icon="fas fa-shopping-cart"
+        color="green"
+    />
+    <x-admin.stats-card
+        label="Total Pendapatan"
+        :value="$totalRevenue ?? 0"
+        icon="fas fa-dollar-sign"
+        color="purple"
+    />
+    <x-admin.stats-card
+        label="Produk Terjual"
+        :value="$totalProducts ?? 0"
+        icon="fas fa-box"
+        color="orange"
+    />
+</div>
 
-        body {
-            background-color: var(--bg-main);
-            color: white;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            overflow-x: hidden;
-        }
-
-        .glass-card {
-            background: var(--bg-card);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .glass-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-5px);
-        }
-
-        .sidebar {
-            height: 100vh;
-            background: rgba(15, 23, 42, 0.9);
-            border-right: 1px solid var(--glass-border);
-            padding: 2rem 1.5rem;
-            position: sticky;
-            top: 0;
-        }
-
-        .nav-link {
-            color: var(--text-dim);
-            padding: 0.8rem 1rem;
-            border-radius: 12px;
-            margin-bottom: 0.5rem;
-            transition: 0.3s;
-            text-decoration: none;
-        }
-
-        .nav-link:hover, .nav-link.active {
-            background: rgba(56, 189, 248, 0.1);
-            color: var(--accent);
-        }
-
-        .stat-card { padding: 1.5rem; text-align: center; }
-
-        .table {
-            color: white;
-            --bs-table-bg: transparent;
-            --bs-table-hover-bg: rgba(255, 255, 255, 0.03);
-        }
-
-        .table thead th {
-            color: var(--text-dim);
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.7rem;
-            letter-spacing: 1px;
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        .badge-admin {
-            background: rgba(56, 189, 248, 0.2);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-            font-size: 0.7rem;
-            padding: 0.4rem 0.8rem;
-            border-radius: 8px;
-        }
-
-        .btn-action {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            color: white;
-            border-radius: 10px;
-            width: 35px; height: 35px;
-            display: inline-flex; align-items: center; justify-content: center;
-        }
-
-        .btn-action:hover { background: var(--accent); color: var(--bg-main); }
-
-        .audit-item { padding: 1rem; border-bottom: 1px solid var(--glass-border); transition: 0.2s; }
-        .audit-item:hover { background: rgba(255, 255, 255, 0.02); }
-        .text-accent { color: var(--accent); }
-    </style>
-</head>
-
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-2 sidebar d-none d-md-block">
-                <h4 class="fw-bold mb-5"><i class="fas fa-shield-alt text-info me-2"></i> Q-LES HQ</h4>
-                <nav class="nav flex-column">
-                    <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
-                        <i class="fas fa-th-large me-2"></i> Overview
-                    </a>
-                    <a class="nav-link" href="#"><i class="fas fa-users me-2"></i> Users</a>
-                    <a class="nav-link" href="#"><i class="fas fa-server me-2"></i> Services</a>
-                    <a class="nav-link" href="#"><i class="fas fa-file-invoice me-2"></i> Audit Logs</a>
-                    
-                    <form method="POST" action="{{ route('logout') }}" class="mt-5">
-                        @csrf
-                        <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start">
-                            <i class="fas fa-sign-out-alt me-2"></i> Logout
-                        </button>
-                    </form>
-                </nav>
-            </div>
-
-            <div class="col-md-10 p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h2 class="fw-bold m-0 text-white">Command Center</h2>
-                        <p class="text-dim small">Monitor and manage your system ecosystem.</p>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <div class="text-end me-3">
-                            <p class="m-0 fw-bold">{{ auth()->user()->name }}</p>
-                            <span class="badge-admin">SUPER ADMIN</span>
-                        </div>
-                        <img src="https://ui-avatars.com/api/?name={{ auth()->user()->name }}&background=38bdf8&color=fff" class="rounded-circle border border-info" width="45">
-                    </div>
-                </div>
-
-                <div class="row g-4 mb-4">
-                    <div class="col-md-4">
-                        <div class="glass-card p-4 text-center border-{{ isset($apiData['error']) ? 'danger' : 'info' }}">
-                            <p class="text-dim small mb-1">Cloud Server Status</p>
-                            <h4 class="fw-bold {{ isset($apiData['error']) ? 'text-danger' : 'text-info' }}">
-                                <i class="fas fa-signal me-2"></i>
-                                {{ isset($apiData['error']) ? 'OFFLINE' : 'ONLINE' }}
-                            </h4>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="glass-card p-4 text-center">
-                            <p class="text-dim small mb-1">Active Flutter Sessions</p>
-                            <h4 class="fw-bold text-accent">
-                                {{ $apiData['active_users'] ?? '0' }} <span class="small text-dim">Siswa</span>
-                            </h4>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="glass-card p-4 text-center">
-                            <p class="text-dim small mb-1">API Requests Today</p>
-                            <h4 class="fw-bold text-white">
-                                {{ number_format($apiData['total_hits'] ?? 0) }}
-                            </h4>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="glass-card stat-card">
-                            <p class="text-dim small mb-1">Total Database Users</p>
-                            <h3 class="fw-bold m-0 text-white">{{ $users->count() }}</h3>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="glass-card stat-card">
-                            <p class="text-dim small mb-1">Database Status</p>
-                            <h3 class="fw-bold m-0 text-success">CONNECTED</h3>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="glass-card p-4">
-                            <h5 class="fw-bold mb-4">User Management</h5>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">
-                                    <thead>
-                                        <tr>
-                                            <th>USER</th>
-                                            <th>ROLE</th>
-                                            <th class="text-end">ACTIONS</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($users as $user)
-                                        <tr>
-                                            <td>
-                                                <div class="fw-bold">{{ $user->name }}</div>
-                                                <div class="text-dim small">{{ $user->email }}</div>
-                                            </td>
-                                            <td><span class="badge-admin">{{ strtoupper($user->role) }}</span></td>
-                                            <td class="text-end">
-                                                <button class="btn-action me-1"><i class="fas fa-pen small"></i></button>
-                                                <button class="btn-action text-danger"><i class="fas fa-trash small"></i></button>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="glass-card p-4 h-100">
-                            <h5 class="fw-bold mb-4">System Activity</h5>
-                            @forelse($logs as $log)
-                                <div class="audit-item">
-                                    <p class="m-0 small fw-bold text-info">{{ $log->user->name }}</p>
-                                    <p class="m-0 text-dim small">{{ $log->action }}</p>
-                                    <span class="text-muted" style="font-size: 0.6rem;">{{ $log->created_at->diffForHumans() }}</span>
-                                </div>
-                            @empty
-                                <p class="text-center text-dim mt-5">No logs recorded.</p>
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-            </div>
+{{-- Charts Row --}}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
+    {{-- Revenue Line Chart --}}
+    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 class="text-base font-semibold text-gray-800 mb-4">Tren Submission (6 Bulan Terakhir)</h3>
+        <div class="relative h-56">
+            <canvas id="revenueChart"></canvas>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    {{-- Category Donut Chart --}}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 class="text-base font-semibold text-gray-800 mb-4">Distribusi Pengguna</h3>
+        <div class="relative h-56 flex items-center justify-center">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+</div>
+
+{{-- Orders Table + New Users --}}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    {{-- Orders Table --}}
+    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 class="text-base font-semibold text-gray-800 mb-4">Submission Terbaru</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-100">
+                        <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">ID</th>
+                        <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama Pengguna</th>
+                        <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                        <th class="text-left py-2 px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tanggal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    @forelse($recentSubmissions as $submission)
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="py-2.5 px-3 text-gray-500 font-mono text-xs">#{{ $submission->id }}</td>
+                        <td class="py-2.5 px-3 font-medium text-gray-800">
+                            {{ $submission->student->name ?? 'N/A' }}
+                        </td>
+                        <td class="py-2.5 px-3">
+                            @php
+                                $statusColor = match($submission->status ?? '') {
+                                    'completed'   => 'bg-green-100 text-green-700',
+                                    'on-progress' => 'bg-yellow-100 text-yellow-700',
+                                    'canceled'    => 'bg-red-100 text-red-700',
+                                    default       => 'bg-gray-100 text-gray-600',
+                                };
+                            @endphp
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $statusColor }}">
+                                {{ $submission->status ?? '-' }}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-3 text-gray-500 text-xs">
+                            {{ $submission->created_at?->format('d M Y') ?? '-' }}
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="4" class="py-8 text-center text-gray-400 text-sm">
+                            Belum ada data submission.
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{-- New Users List --}}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+        <h3 class="text-base font-semibold text-gray-800 mb-4">Pengguna Baru</h3>
+        <div class="space-y-3">
+            @forelse($newUsers as $user)
+            <div class="flex items-center gap-3">
+                <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=3b82f6&color=fff&size=36"
+                    class="w-9 h-9 rounded-full flex-shrink-0"
+                    alt="{{ $user->name }}">
+                <div class="min-w-0">
+                    <p class="text-sm font-medium text-gray-800 truncate">{{ $user->name }}</p>
+                    <p class="text-xs text-gray-500 truncate">{{ $user->email }}</p>
+                </div>
+            </div>
+            @empty
+            <p class="text-sm text-gray-400 text-center py-4">Belum ada pengguna terdaftar.</p>
+            @endforelse
+        </div>
+    </div>
+
+</div>
+
+@endsection
+
+@push('scripts')
+<script>
+    // Revenue Line Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: @json($revenueData['labels'] ?? []),
+            datasets: [{
+                label: 'Submission',
+                data: @json($revenueData['values'] ?? []),
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                borderWidth: 2,
+                pointBackgroundColor: '#3b82f6',
+                pointRadius: 4,
+                tension: 0.4,
+                fill: true,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: { color: 'rgba(0,0,0,0.04)' }
+                },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Category Donut Chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: @json($categoryData['labels'] ?? []),
+            datasets: [{
+                data: @json($categoryData['values'] ?? []),
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                borderWidth: 0,
+                hoverOffset: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { padding: 12, font: { size: 11 } }
+                }
+            },
+            cutout: '65%',
+        }
+    });
+</script>
+@endpush
