@@ -1,19 +1,29 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+<nav x-data="{ open: false }" class="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-40">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                    <a href="{{ route('dashboard') }}" class="group flex items-center gap-2">
+                        <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform duration-300">
+                            Q
+                        </div>
+                        <span class="font-bold text-xl text-gray-800 tracking-tight ml-2">Q-Les Admin</span>
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="hover:text-indigo-600 transition-colors">
                         {{ __('Dashboard') }}
+                    </x-nav-link>
+                    <!-- Tautan ke Service Center dan Ratings -->
+                    <x-nav-link :href="url('/hq-admin/service-center')" :active="request()->is('hq-admin/service-center')" class="hover:text-indigo-600 transition-colors">
+                        {{ __('Service Center') }}
+                    </x-nav-link>
+                    <x-nav-link :href="url('/hq-admin/ratings')" :active="request()->is('hq-admin/ratings')" class="hover:text-indigo-600 transition-colors">
+                        {{ __('Ratings') }}
                     </x-nav-link>
                 </div>
             </div>
@@ -22,7 +32,10 @@
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                        <button class="inline-flex items-center px-4 py-2 border border-gray-200 text-sm leading-4 font-medium rounded-full text-gray-600 bg-white hover:bg-gray-50 hover:text-gray-900 focus:outline-none transition ease-in-out duration-150 shadow-sm">
+                            <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mr-2 font-bold text-xs">
+                                {{ substr(Auth::user()->name, 0, 1) }}
+                            </div>
                             <div>{{ Auth::user()->name }}</div>
 
                             <div class="ms-1">
@@ -45,7 +58,7 @@
                             <x-dropdown-link :href="route('logout')"
                                     onclick="event.preventDefault();
                                                 this.closest('form').submit();">
-                                {{ __('Log Out') }}
+                                <span class="text-red-600">{{ __('Log Out') }}</span>
                             </x-dropdown-link>
                         </form>
                     </x-slot>
