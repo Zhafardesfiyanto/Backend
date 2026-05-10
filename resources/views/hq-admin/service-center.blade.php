@@ -43,7 +43,7 @@
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
     <div class="flex items-center justify-between mb-4">
         <h3 class="text-base font-semibold text-gray-800">Daftar Tiket</h3>
-        <span class="text-xs text-gray-500">{{ $tickets->total() }} tiket</span>
+        <span class="text-xs text-gray-500">{{ count($tickets) }} tiket</span>
     </div>
 
     @forelse($tickets as $ticket)
@@ -56,7 +56,7 @@
                 <i class="fas fa-chevron-down text-xs transition-transform" :class="{ 'rotate-180': open }"></i>
             </div>
             <div class="flex-shrink-0 w-8 text-center">
-                <span class="text-xs font-mono text-gray-400">#{{ $ticket->id }}</span>
+                <span class="text-xs font-mono text-gray-400">UID</span>
             </div>
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-gray-800 truncate">{{ $ticket->subject }}</p>
@@ -90,18 +90,10 @@
                 </div>
             </div>
 
-            {{-- Admin Reply (if exists) --}}
-            @if($ticket->admin_reply)
-            <div class="mb-4">
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Balasan Admin</p>
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800 leading-relaxed">
-                    {{ $ticket->admin_reply }}
-                </div>
-            </div>
-            @endif
+            {{-- Pesan di Firestore langsung gabung jadi thread --}}
 
             {{-- Update Form --}}
-            <form method="POST" action="{{ route('admin.service.update', $ticket) }}">
+            <form method="POST" action="{{ route('admin.service.update', $ticket->id) }}">
                 @csrf
                 @method('PATCH')
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -125,7 +117,7 @@
                             rows="3"
                             maxlength="2000"
                             placeholder="Tulis balasan untuk pengguna..."
-                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none">{{ $ticket->admin_reply }}</textarea>
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
                     </div>
                 </div>
                 <div class="mt-3 flex justify-end">
@@ -144,12 +136,7 @@
     </div>
     @endforelse
 
-    {{-- Pagination --}}
-    @if($tickets->hasPages())
-    <div class="mt-4 pt-4 border-t border-gray-100">
-        {{ $tickets->links() }}
-    </div>
-    @endif
+
 </div>
 
 @endsection

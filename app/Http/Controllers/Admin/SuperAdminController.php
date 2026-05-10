@@ -12,6 +12,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Kreait\Firebase\Factory;
+use Google\Auth\Credentials\ServiceAccountCredentials;
+use GuzzleHttp\Client;
 
 class SuperAdminController extends Controller
 {
@@ -110,6 +112,7 @@ class SuperAdminController extends Controller
 
     /**
      * Ambil daftar akun dari Firebase Authentication (maks 1000).
+     * Termasuk info Google provider: nama, foto, kapan terakhir login.
      */
     private function getFirebaseUsers(): array
     {
@@ -126,12 +129,37 @@ class SuperAdminController extends Controller
 
             $list = [];
             foreach ($result as $user) {
+                // Cari provider Google di antara semua providerData
+                $googleProvider = null;
+                foreach ($user->providerData as $provider) {
+                    if ($provider->providerId === 'google.com') {
+                        $googleProvider = $provider;
+                        break;
+                    }
+                }
+
                 $list[] = [
                     'uid'           => $user->uid,
                     'email'         => $user->email ?? '(no email)',
+                    'displayName'   => $user->displayName ?? ($googleProvider?->displayName ?? null),
+                    'photoUrl'      => $user->photoUrl ?? ($googleProvider?->photoUrl ?? null),
                     'emailVerified' => $user->emailVerified,
+                    'loginGoogle'   => $googleProvider !== null,
+                    'lastLoginAt'   => $user->metadata->lastLoginAt ?? null,
+                    'createdAt'     => $user->metadata->createdAt ?? null,
+                    'disabled'      => $user->disabled,
                 ];
             }
+
+            // Urutkan: yang login Google duluan, lalu berdasarkan lastLoginAt terbaru
+            usort($list, function ($a, $b) {
+                if ($a['loginGoogle'] !== $b['loginGoogle']) {
+                    return $b['loginGoogle'] <=> $a['loginGoogle'];
+                }
+                $timeA = $a['lastLoginAt'] ? $a['lastLoginAt']->getTimestamp() : 0;
+                $timeB = $b['lastLoginAt'] ? $b['lastLoginAt']->getTimestamp() : 0;
+                return $timeB <=> $timeA;
+            });
 
             return ['error' => null, 'data' => $list];
         } catch (\Kreait\Firebase\Exception\AuthException $e) {
@@ -178,32 +206,161 @@ class SuperAdminController extends Controller
     public function serviceCenter(Request $request): View
     {
         $status = $request->query('status', '');
-
-        $tickets = SupportTicket::with('user')
-            ->when($status, fn ($q) => $q->where('status', $status))
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
+        $tickets = $this->getFirestoreSupportTickets($status);
 
         return view('hq-admin.service-center', compact('tickets', 'status'));
     }
 
-    public function updateTicket(Request $request, SupportTicket $ticket): RedirectResponse
+    private function getFirestoreSupportTickets($statusFilter = '')
+    {
+        $credentialsPath = config('firebase.credentials');
+        if (empty($credentialsPath) || !file_exists($credentialsPath)) return [];
+        
+        $keyData = json_decode(file_get_contents($credentialsPath), true);
+        $projectId = $keyData['project_id'];
+        $credentials = new ServiceAccountCredentials(
+            ['https://www.googleapis.com/auth/datastore'], $keyData
+        );
+        $token = $credentials->fetchAuthToken()['access_token'] ?? null;
+        if (!$token) return [];
+
+        $url = "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents/support_tickets";
+        try {
+            $client = new Client(['timeout' => 10]);
+            $response = $client->get($url, ['headers' => ['Authorization' => "Bearer {$token}"]]);
+            $body = json_decode($response->getBody(), true);
+            $documents = $body['documents'] ?? [];
+
+            $list = [];
+            foreach ($documents as $doc) {
+                $fields = $doc['fields'] ?? [];
+                $get = fn($key, $type = 'stringValue') => $fields[$key][$type] ?? null;
+
+                $status = $get('status') ?? 'open';
+                if ($statusFilter && $status !== $statusFilter) continue;
+
+                $updatedAt = null;
+                if (isset($fields['updatedAt']['timestampValue'])) {
+                    try {
+                        $updatedAt = new \DateTime($fields['updatedAt']['timestampValue']);
+                    } catch (\Exception $e) {}
+                }
+
+                // Fetch messages
+                $messagesUrl = "https://firestore.googleapis.com/v1/{$doc['name']}/messages?orderBy=createdAt";
+                try {
+                    $msgResponse = $client->get($messagesUrl, ['headers' => ['Authorization' => "Bearer {$token}"]]);
+                    $msgBody = json_decode($msgResponse->getBody(), true);
+                    $messages = [];
+                    foreach ($msgBody['documents'] ?? [] as $mDoc) {
+                        $mFields = $mDoc['fields'] ?? [];
+                        $mGet = fn($k, $t = 'stringValue') => $mFields[$k][$t] ?? null;
+                        $messages[] = [
+                            'text' => $mGet('text'),
+                            'isFromSupport' => $mGet('isFromSupport', 'booleanValue') ?? false,
+                        ];
+                    }
+                } catch (\Exception $e) {
+                    $messages = []; // subcollection might not exist or be empty
+                }
+
+                $uid = basename($doc['name']);
+                
+                $ticket = new \stdClass();
+                $ticket->id = $uid;
+                $ticket->subject = "Tiket Support";
+                $ticket->status = $status;
+                $ticket->user = (object)['name' => $get('name') ?? 'Anonim', 'email' => $get('email') ?? ''];
+                $ticket->created_at = $updatedAt;
+                
+                $chatHistory = "";
+                foreach($messages as $msg) {
+                    $sender = $msg['isFromSupport'] ? "Admin" : "User";
+                    $chatHistory .= "[$sender]: {$msg['text']}\n\n";
+                }
+                $ticket->message = empty($chatHistory) ? "Belum ada pesan." : $chatHistory;
+                $ticket->admin_reply = ""; 
+
+                $list[] = $ticket;
+            }
+
+            usort($list, fn($a, $b) => ($b->created_at <=> $a->created_at));
+            return $list;
+        } catch (\Exception $e) {
+            report($e);
+            return [];
+        }
+    }
+
+    public function updateTicket(Request $request, $ticketId): RedirectResponse
     {
         $validated = $request->validate([
             'status'      => 'required|in:open,in_progress,closed',
             'admin_reply' => 'nullable|string|max:2000',
         ]);
 
-        $ticket->update($validated);
+        $credentialsPath = config('firebase.credentials');
+        if (empty($credentialsPath) || !file_exists($credentialsPath)) {
+            return back()->with('error', 'Firebase credentials tidak ditemukan.');
+        }
 
-        AuditLog::record(
-            auth()->id(),
-            'UPDATE_TICKET',
-            'support_tickets',
-            $ticket->id,
-            "Admin mengubah status tiket #{$ticket->id} menjadi {$validated['status']}"
+        $keyData = json_decode(file_get_contents($credentialsPath), true);
+        $projectId = $keyData['project_id'];
+        $credentials = new ServiceAccountCredentials(
+            ['https://www.googleapis.com/auth/datastore'], $keyData
         );
+        $token = $credentials->fetchAuthToken()['access_token'] ?? null;
+
+        $client = new Client(['timeout' => 10]);
+
+        try {
+            // Update status
+            $url = "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents/support_tickets/{$ticketId}?updateMask.fieldPaths=status&updateMask.fieldPaths=updatedAt";
+            $payload = [
+                'fields' => [
+                    'status' => ['stringValue' => $validated['status']],
+                    'updatedAt' => ['timestampValue' => now()->timezone('UTC')->format('Y-m-d\TH:i:s.u\Z')]
+                ]
+            ];
+            $client->patch($url, [
+                'headers' => ['Authorization' => "Bearer {$token}"],
+                'json' => $payload
+            ]);
+
+            // Add reply to messages
+            if (!empty($validated['admin_reply'])) {
+                $msgUrl = "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents/support_tickets/{$ticketId}/messages";
+                $msgPayload = [
+                    'fields' => [
+                        'text' => ['stringValue' => $validated['admin_reply']],
+                        'isFromSupport' => ['booleanValue' => true],
+                        'createdAt' => ['timestampValue' => now()->timezone('UTC')->format('Y-m-d\TH:i:s.u\Z')]
+                    ]
+                ];
+                
+                $msgResponse = $client->post($msgUrl, [
+                    'headers' => ['Authorization' => "Bearer {$token}"],
+                    'json' => $msgPayload,
+                    'http_errors' => false
+                ]);
+                
+                if ($msgResponse->getStatusCode() >= 400) {
+                    throw new \Exception("Firestore error: " . $msgResponse->getBody()->getContents());
+                }
+            }
+
+            AuditLog::record(
+                auth()->id(),
+                'UPDATE_TICKET',
+                'support_tickets',
+                $ticketId,
+                "Admin membalas/mengubah status tiket Firestore #{$ticketId} menjadi {$validated['status']}"
+            );
+
+        } catch (\Exception $e) {
+            report($e);
+            return back()->with('error', 'Gagal update tiket di Firestore: ' . $e->getMessage());
+        }
 
         return back()->with('success', 'Tiket berhasil diperbarui.');
     }
@@ -241,4 +398,118 @@ class SuperAdminController extends Controller
 
         return back()->with('error', 'Tidak ada sesi aktif ditemukan.');
     }
+
+    // -------------------------------------------------------------------------
+    // Ratings & Firestore Introspection
+    // -------------------------------------------------------------------------
+
+    /**
+     * Halaman rating dari Firestore — untuk introspeksi admin
+     * GET /hq-admin/ratings
+     */
+    public function ratings(): View
+    {
+        $ratings    = $this->getFirestoreRatings();
+        $avgRating  = collect($ratings)->avg('rating') ?? 0;
+        $totalCount = count($ratings);
+
+        // Distribusi bintang 1-5
+        $distribution = array_fill(1, 5, 0);
+        foreach ($ratings as $r) {
+            $star = (int) ($r['rating'] ?? 0);
+            if ($star >= 1 && $star <= 5) {
+                $distribution[$star]++;
+            }
+        }
+
+        return view('hq-admin.ratings', compact(
+            'ratings',
+            'avgRating',
+            'totalCount',
+            'distribution'
+        ));
+    }
+
+    /**
+     * Ambil semua dokumen dari koleksi app_ratings via Firestore REST API.
+     * Tidak memerlukan ext-grpc — menggunakan HTTP + ServiceAccountCredentials.
+     */
+    private function getFirestoreRatings(): array
+    {
+        $credentialsPath = config('firebase.credentials');
+
+        if (empty($credentialsPath) || !file_exists($credentialsPath)) {
+            return [];
+        }
+
+        try {
+            $keyData   = json_decode(file_get_contents($credentialsPath), true);
+            $projectId = $keyData['project_id'];
+
+            // Dapatkan access token via service account (google/auth sudah include di kreait)
+            $scopes      = ['https://www.googleapis.com/auth/datastore'];
+            $credentials = new ServiceAccountCredentials($scopes, $keyData);
+            $tokenData   = $credentials->fetchAuthToken();
+            $accessToken = $tokenData['access_token'] ?? null;
+
+            if (!$accessToken) {
+                return [];
+            }
+
+            // Panggil Firestore REST API
+            $url = "https://firestore.googleapis.com/v1/projects/{$projectId}/databases/(default)/documents/app_ratings";
+
+            $client   = new Client(['timeout' => 10]);
+            $response = $client->get($url, [
+                'headers' => ['Authorization' => "Bearer {$accessToken}"],
+            ]);
+
+            $body      = json_decode($response->getBody(), true);
+            $documents = $body['documents'] ?? [];
+
+            $list = [];
+            foreach ($documents as $doc) {
+                $fields = $doc['fields'] ?? [];
+
+                // Helper: ambil nilai dari Firestore field format
+                $get = fn($key, $type = 'stringValue') => $fields[$key][$type] ?? null;
+
+                // Firestore timestamp → format tanggal
+                $submittedAt = null;
+                if (isset($fields['submittedAt']['timestampValue'])) {
+                    try {
+                        $dt          = new \DateTime($fields['submittedAt']['timestampValue']);
+                        $submittedAt = $dt->format('d M Y H:i');
+                    } catch (\Exception) {}
+                }
+
+                // Tags tersimpan sebagai arrayValue
+                $tags = [];
+                if (isset($fields['tags']['arrayValue']['values'])) {
+                    foreach ($fields['tags']['arrayValue']['values'] as $v) {
+                        $tags[] = $v['stringValue'] ?? '';
+                    }
+                }
+
+                $list[] = [
+                    'uid'         => basename($doc['name']),
+                    'name'        => $get('name')          ?? 'Anonim',
+                    'rating'      => (int) ($get('rating', 'integerValue') ?? $get('rating', 'doubleValue') ?? 0),
+                    'review'      => $get('review')        ?? '',
+                    'tags'        => $tags,
+                    'submittedAt' => $submittedAt,
+                ];
+            }
+
+            // Urutkan dari rating tertinggi
+            usort($list, fn($a, $b) => $b['rating'] <=> $a['rating']);
+
+            return $list;
+
+        } catch (\Exception $e) {
+            report($e);
+            return [];
+        }
+    }
 }
+

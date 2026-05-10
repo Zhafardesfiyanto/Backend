@@ -52,7 +52,12 @@
                 <x-admin.sidebar-item
                     route="admin.service"
                     icon="fas fa-headset"
-                    label="Pesan"
+                    label="Pesan CS"
+                />
+                <x-admin.sidebar-item
+                    route="admin.ratings"
+                    icon="fas fa-star"
+                    label="Rating & Ulasan"
                 />
                 <x-admin.sidebar-item
                     route="admin.dashboard"

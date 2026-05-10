@@ -28,6 +28,9 @@ Route::middleware(['auth', 'superadmin'])->prefix('hq-admin')->name('admin.')->g
     // Customer Service / Support Tickets
     Route::get('/service-center', [SuperAdminController::class, 'serviceCenter'])->name('service');
     Route::patch('/service-center/{ticket}', [SuperAdminController::class, 'updateTicket'])->name('service.update');
+
+    // Ratings & Firestore Introspection
+    Route::get('/ratings', [SuperAdminController::class, 'ratings'])->name('ratings');
 });
 
 // ─── Auth Routes ──────────────────────────────────────────────────────────────
