@@ -18,9 +18,16 @@ Route::middleware(['auth', 'superadmin'])->prefix('hq-admin')->name('admin.')->g
     // Dashboard
     Route::get('/dashboard', [SuperAdminController::class, 'index'])->name('dashboard');
 
+    // Settings
+    Route::get('/settings', [SuperAdminController::class, 'settings'])->name('settings');
+    Route::post('/settings', [SuperAdminController::class, 'updateSettings'])->name('settings.update');
+
     // User Management
     Route::get('/users', [SuperAdminController::class, 'users'])->name('users');
     Route::delete('/users/{id}', [SuperAdminController::class, 'destroyUser'])->name('users.destroy');
+
+    // Class Management
+    Route::get('/classes', [SuperAdminController::class, 'classes'])->name('classes');
 
     // Audit Logs
     Route::get('/logs', [SuperAdminController::class, 'logs'])->name('logs');

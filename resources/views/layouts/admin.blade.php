@@ -33,6 +33,11 @@
                 label="Pengguna"
             />
             <x-admin.sidebar-item
+                route="admin.classes"
+                icon="fas fa-chalkboard"
+                label="Kelas"
+            />
+            <x-admin.sidebar-item
                 route="admin.logs"
                 icon="fas fa-file-invoice"
                 label="Pesanan"
@@ -43,7 +48,7 @@
                 label="Laporan"
             />
             <x-admin.sidebar-item
-                route="admin.dashboard"
+                route="admin.settings"
                 icon="fas fa-cog"
                 label="Pengaturan"
             />

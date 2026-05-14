@@ -26,8 +26,8 @@ class SuperAdminController extends Controller
         // Stats Cards
         $totalUsers       = User::count();
         $totalSubmissions = Submission::count();
-        $totalRevenue     = 0; // placeholder
-        $totalProducts    = 0; // placeholder
+        $totalClasses     = \App\Models\Classes::count();
+        $totalExams       = \App\Models\Exam::count();
 
         // Orders Table — 10 submission terbaru
         $recentSubmissions = Submission::with('student')
@@ -45,13 +45,48 @@ class SuperAdminController extends Controller
         return view('hq-admin.dashboard', compact(
             'totalUsers',
             'totalSubmissions',
-            'totalRevenue',
-            'totalProducts',
+            'totalClasses',
+            'totalExams',
             'recentSubmissions',
             'newUsers',
             'revenueData',
             'categoryData'
         ));
+    }
+
+    public function settings(): View
+    {
+        $settings = \App\Models\Setting::pluck('value', 'key')->toArray();
+        return view('hq-admin.settings', compact('settings'));
+    }
+
+    public function updateSettings(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'app_name'          => 'required|string|max:50',
+            'support_email'     => 'required|email',
+            'timezone'          => 'required|string',
+            'registration_open' => 'nullable|boolean',
+            'maintenance_mode'  => 'nullable|boolean',
+        ]);
+
+        // Fix booleans (since checkbox only sends value if checked)
+        $data['registration_open'] = $request->has('registration_open') ? '1' : '0';
+        $data['maintenance_mode']  = $request->has('maintenance_mode') ? '1' : '0';
+
+        foreach ($data as $key => $value) {
+            \App\Models\Setting::set($key, $value);
+        }
+
+        AuditLog::record(
+            auth()->id(),
+            'UPDATE_SETTINGS',
+            'settings',
+            null,
+            "Admin memperbarui pengaturan sistem global"
+        );
+
+        return back()->with('success', 'Pengaturan berhasil disimpan!');
     }
 
     /**
@@ -108,6 +143,25 @@ class SuperAdminController extends Controller
         $firebaseUsers = $this->getFirebaseUsers();
 
         return view('hq-admin.users', compact('users', 'firebaseUsers', 'search'));
+    }
+
+    // -------------------------------------------------------------------------
+    // Class & Exam Management
+    // -------------------------------------------------------------------------
+
+    public function classes(Request $request): View
+    {
+        $search = $request->query('search', '');
+
+        $classes = \App\Models\Classes::with(['teacher', 'members'])
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%")
+                      ->orWhere('code', 'like', "%{$search}%");
+            })
+            ->latest()
+            ->paginate(15);
+
+        return view('hq-admin.classes', compact('classes', 'search'));
     }
 
     /**
