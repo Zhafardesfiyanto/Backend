@@ -49,9 +49,7 @@
     <aside class="w-[260px] glass-sidebar shadow-[4px_0_24px_rgba(14,165,233,0.05)] flex-shrink-0 flex flex-col h-screen overflow-y-auto">
         {{-- Logo --}}
         <div class="flex items-center gap-4 px-6 py-6 border-b border-slate-100/60">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-sky-400 flex items-center justify-center shadow-md shadow-blue-500/20">
-                <i class="fas fa-shield-alt text-white text-lg"></i>
-            </div>
+            <img src="{{ asset('logo.png') }}" alt="Q-Les Logo" class="w-10 h-10 object-contain drop-shadow-md">
             <span class="text-slate-800 font-black text-xl tracking-tight">Q-LES<span class="text-blue-500">.HQ</span></span>
         </div>
 

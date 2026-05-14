@@ -64,9 +64,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <div class="flex items-center gap-3 cursor-pointer">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-sky-400 flex items-center justify-center shadow-lg shadow-blue-500/25">
-                        <span class="text-xl font-black text-white">Q</span>
-                    </div>
+                    <img src="{{ asset('logo.png') }}" alt="Q-Les Logo" class="w-10 h-10 object-contain drop-shadow-md">
                     <span class="font-black text-2xl tracking-tight text-slate-800">Q-Les</span>
                 </div>
                 <div class="hidden md:flex space-x-8">
@@ -282,8 +280,8 @@
                             <div class="w-full max-w-sm aspect-square relative group">
                                 <div class="absolute inset-0 bg-gradient-to-tr from-blue-500 to-sky-400 rounded-[2.5rem] transform rotate-6 opacity-60 blur-xl group-hover:rotate-12 group-hover:scale-105 transition-all duration-500"></div>
                                 <div class="absolute inset-0 bg-slate-800/50 border border-white/10 rounded-[2.5rem] backdrop-blur-xl shadow-2xl flex flex-col items-center justify-center p-8 group-hover:-translate-y-2 transition-all duration-500">
-                                    <div class="w-28 h-28 bg-gradient-to-br from-blue-400 to-sky-400 rounded-full flex items-center justify-center mb-8 shadow-[0_0_40px_rgba(56,189,248,0.4)] animate-pulse" style="animation-duration: 3s;">
-                                        <i class="fas fa-rocket text-5xl text-white"></i>
+                                    <div class="w-28 h-28 flex items-center justify-center mb-8 drop-shadow-[0_0_20px_rgba(56,189,248,0.5)] animate-pulse" style="animation-duration: 3s;">
+                                        <img src="{{ asset('logo.png') }}" alt="Q-Les App" class="w-24 h-24 object-contain">
                                     </div>
                                     <h4 class="text-3xl font-black text-white mb-2">Q-Les App</h4>
                                     <div class="px-4 py-1.5 rounded-full bg-white/10 text-sky-300 text-sm font-bold border border-white/10">v1.2.0 Stable Release</div>
@@ -301,9 +299,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-10">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center shadow-md">
-                        <span class="text-lg font-black text-white">Q</span>
-                    </div>
+                    <img src="{{ asset('logo.png') }}" alt="Q-Les Logo" class="w-10 h-10 object-contain">
                     <span class="font-black text-2xl text-slate-800 tracking-tight">Q-Les</span>
                 </div>
                 <div class="flex gap-6">

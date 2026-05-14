@@ -57,9 +57,7 @@
         <div class="relative z-10 w-full max-w-md p-6">
             <div class="flex justify-center mb-8">
                 <a href="/" class="flex items-center gap-3 group">
-                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 to-sky-500 flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-105 group-hover:-rotate-3 transition-all duration-300 ring-4 ring-white/50">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    </div>
+                    <img src="{{ asset('logo.png') }}" alt="Q-Les Logo" class="w-14 h-14 object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-300">
                     <span class="text-3xl font-black text-slate-800 tracking-tight">Q-Les</span>
                 </a>
             </div>
