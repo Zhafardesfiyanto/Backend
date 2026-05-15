@@ -113,7 +113,7 @@
                     <a href="#fitur" class="px-8 py-4 w-full sm:w-auto bg-gradient-to-r from-blue-600 to-sky-500 text-white font-bold rounded-xl overflow-hidden shadow-xl shadow-blue-500/20 hover:-translate-y-1 transition-all duration-300 text-lg">
                         Mulai Eksplorasi Fitur
                     </a>
-                    <a href="{{ asset('q-les.apk') }}" download class="px-8 py-4 w-full sm:w-auto bg-white/80 backdrop-blur-sm border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-white hover:text-blue-600 transition-all duration-300 shadow-sm text-lg flex items-center justify-center gap-2 group">
+                    <a href="https://drive.google.com/uc?export=download&id=1_aH1JNVzChkxxiF3P-_GE-loRCpxkmDR" class="px-8 py-4 w-full sm:w-auto bg-white/80 backdrop-blur-sm border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-white hover:text-blue-600 transition-all duration-300 shadow-sm text-lg flex items-center justify-center gap-2 group">
                         <i class="fab fa-android text-emerald-500 group-hover:scale-110 transition-transform"></i> Unduh APK (Gratis)
                     </a>
                 </div>
@@ -262,7 +262,7 @@
                                 Ribuan guru dan siswa telah beralih ke sistem digital. Unduh aplikasi Q-Les untuk Android atau login ke Dashboard Admin untuk mengatur instansi Anda.
                             </p>
                             <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                                <a href="{{ asset('q-les.apk') }}" download class="px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-xl text-center flex items-center justify-center gap-3 group">
+                                <a href="https://drive.google.com/uc?export=download&id=1_aH1JNVzChkxxiF3P-_GE-loRCpxkmDR" class="px-8 py-4 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-xl text-center flex items-center justify-center gap-3 group">
                                     <i class="fab fa-android text-2xl text-emerald-500 group-hover:scale-110 transition-transform"></i> 
                                     <div class="text-left">
                                         <div class="text-[10px] uppercase tracking-wider text-slate-500">Tersedia Untuk Android</div>
